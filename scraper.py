@@ -41,22 +41,38 @@ def get_html_files(path: str) -> list:
 
 def process_data(a_soup: Soup):
     my_dict = {}
-    messages = a_soup.find_all('div', class_=['message default clearfix', 'message default clearfix joined'])
+    joined = False
+    messages = a_soup.find_all('div', class_='message default clearfix')
+    if not messages:
+        joined = True
+        messages = a_soup.find_all('div', class_='message default clearfix joined')
     for msg in messages:
-        my_dict = extract_data(msg)
+        my_dict = extract_data(msg, joined)
 
 
-def extract_data(message):
-    a_dict = {}
-    # print(message)
-    date, time = message.find('div', class_="pull_right date details").get('title').split()
-    # if 'reply_to details' in message.attrs.values():
-    is_reply = message.find('div',class_="reply_to details")
-    if is_reply:
-        is_reply = is_reply.find('a').get('href').split('_')[2]
+
+
+def extract_data(message, is_joined, a_dict):
+    if not is_joined:
+        date, time = message.find('div', class_="pull_right date details").get('title').split()
+        msg_id = message.get('id')[7:]
+        is_reply = message.find('div', class_="reply_to details")
+        if is_reply:
+            is_reply = is_reply.find('a').get('href').split('_')[2][7:]
+        user = message.find('div', class_="from_name").text
+        text = message.find('div', class_='text')
+        a_dict = dict(
+            msg_id=msg_id,
+            user_id=user,
+            text=text,
+            date=date,
+            time=time,
+            reply_to=is_reply
+        )
+    else:
+        a_dict['text'] = a_dict['text'] + '\n' + message.find('div', class_='text')
 
     return a_dict
-
 
 # dir_path = input()
 # my_html = '\n'.join(get_html_files(dir_path))
